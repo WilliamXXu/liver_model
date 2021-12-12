@@ -1,5 +1,5 @@
 # liver_model
-The program is divided into a few sections:
+The main.m program is divided into a few sections:
 
 adjustable parameters\
 parameters\
