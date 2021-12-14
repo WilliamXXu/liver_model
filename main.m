@@ -1,7 +1,7 @@
 %----------------------  adjustable parameters  ----------------------
-iterations=1000;
+iterations=1e4;
 unit=1; % miu m, space step
-timestep=1e-3; %second, time step
+timestep=2e-3; %second, time step
 
 
 %----------------------   parameters ----------------------
@@ -37,7 +37,7 @@ if abs(f*velo)>1
 end
 
 d1=1620;     % diffusion coeff of sinusoid    miu m^2/sec
-d2=1400;    %diffusion coeff of hepatocyte     3600(not sure)
+d2=1400 ;    %diffusion coeff of hepatocyte     3600(not sure)
 
 miu1=timestep*d1/(unit*unit);
 miu2=timestep*d2/(unit*unit);
@@ -79,12 +79,9 @@ for j=2:(sinusoid+1)   %sinusoid lower/upper boundary
      q=up(length+1,j);
      r=up(length,j);
 
-     
-
-     sA=[sA;l m 1;m m f*velo;m n -f*0.5*d1/unit;m l f*0.5*d1/unit;p p 1;q q 1;];
+     sA=[sA;l l 1;m m 1;p p 1;q q 1;];
      sB=[sB;q q 1-f*velo;q r f*velo ];
-     b(l)=oxy_pp;
-     b(m)=f*flux;
+     b(m)=oxy_pp;
 end
 
 for j=(sinusoid+3):(radius+1)   %hepatocyte lower/upper boundary, zero flux
@@ -128,35 +125,33 @@ A=sparse(sA(:,1),sA(:,2),sA(:,3),total,total);
 B=sparse(sB(:,1),sB(:,2),sB(:,3),total,total);
 
 
-%pre-processing to get the matrices for iterations
-A_inv=inv(A);
-update=A\B;
-
-
-
 % ----------------------iterations ----------------------
 C_previous=C; %two-step method for the reaction term
 count=0;
+tic
 while count<iterations
     b_current=b;  
-    count    
+    count
     for i=2:(length+1)    % update the oxygen consumption term
-        for j=(sinusoid+2):(radius+1)
+        for j=(sinusoid+3):(radius+1)
             n=up(i,j);
             b_current(n)=0.5*timestep*(MM(C_previous(n))-3*MM(C(n)));            
         end
     end
-
-    result= update*B*C+A_inv*b_current; %iterate
+    result= A\(B*C+b_current); %iterate
     C_previous=C;   %update
     C=result;
     count=count+1;
 end
+toc
 
-%---------------------- visualisation ----------------------
+%---------------------- post modification ----------------------
 
 %map back to 2-d
 res=matrix_assemble(C);
+%remove boundry units
+res=res(2:radius+1,2:length+1);
+
 save('result.mat','res')
 %plot
 %heatmap(res);
