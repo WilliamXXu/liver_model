@@ -18,6 +18,7 @@ experiment2: inverse matrix prepared (acutally slower)\
 experiment3: with influx(useless tho)\
 experiment4: no oxygen consumption by hepatocytes\
 experiment5: faster blood flow\
+experiment6: (as like all experiments) fixed number of iterations
 archived2d_1: very old version\
 archived3d: 3d attempt\
 
