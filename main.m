@@ -1,9 +1,8 @@
 %----------------------  adjustable parameters  ----------------------
-iterations=1e4;
 unit=1; % miu m, space step
 timestep=2e-3; %second, time step
-
-
+error_bound=0.1;      %mmHg/second
+%iteration=100;
 %----------------------   parameters ----------------------
 
 %diameter of hepatocyte rescaled, 25-30 miu m
@@ -44,6 +43,8 @@ miu2=timestep*d2/(unit*unit);
 
 %boundary conditions: oxygen concentration and flux at entry
 oxy_pp=65;     %mmHg 
+hemo_pp=4*2300/1.34/(1+(26/oxy_pp)^2.73); %mmHg
+
 conversion=1.34e-3;    %to mol/m3, Henry's law
 flux=oxy_pp*600;     %mmHg*miu/sec, slightly higher than velo*oxy_pp
 
@@ -57,13 +58,17 @@ k_max=6.24e-3/conversion; %mmHg
 
 %----------------------  construction of matrices   ----------------------
 % A c^(n+1)= B c^n+ b
+% h^(n+1)= D h^n+d
 C=zeros(total,1);     %vector of each grid
 b=zeros(total,1);
+H=zeros(total,1);
+d=zeros(total,1);
 
 sA=[]; %sparse matrix for iteration matrices A and B
 sB=[]; 
+sD=[];
 
-%construction of A and B
+%construction of A and B, D
 corners=[1 up(1,sinusoid+2) up(1,radius+2) up(length+2,1) up(length+2,sinusoid+2) up(length+2,radius+2)];  %4 corners and 2 ends of the interface set to 0
 for k=1:6
     n=corners(k);
@@ -82,6 +87,7 @@ for j=2:(sinusoid+1)   %sinusoid lower/upper boundary
      sA=[sA;l l 1;m m 1;p p 1;q q 1;];
      sB=[sB;q q 1-f*velo;q r f*velo ];
      b(m)=oxy_pp;
+     d(m)=hemo_pp;
 end
 
 for j=(sinusoid+3):(radius+1)   %hepatocyte lower/upper boundary, zero flux
@@ -97,15 +103,23 @@ end
 for i=2:(length+1)    %inside
     n=up(i,1);  %sinusoid left boundary, symmetry
     sA=[sA;n n 1;n up(i,3) -1];
+if and(i>2,i<length+1)
+    j=2;
+    n=up(i,j);
+    sA=[sA;n up(i+1,j) -0.5*miu1;n up(i-1,j) -0.5*miu1;n up(i,j+1) -0.5*miu1;n up(i,j-1) -0.5*miu1;n n 1+2*miu1];
+    sB=[sB;n up(i+1,j) 0.5*miu1;n up(i-1,j) 0.5*miu1+f*velo;n up(i,j+1) 0.5*miu1;n up(i,j-1) 0.5*miu1;n n 1-2*miu1-f*velo];
+    sD=[sD;n up(i-1,j) f*velo;n n 1-f*velo];        
 
-    for j=2:(sinusoid+1)  %sinusoid
-       if and(i>2,i<length+1)
+    for j=3:(sinusoid+1)  %sinusoid
+       
         n=up(i,j);
-        sA=[sA;n up(i+1,j) -0.5*miu1;n up(i-1,j) -0.5*miu1;n up(i,j+1) -0.5*miu1;n up(i,j-1) -0.5*miu1;n n 1+2*miu1];
-        sB=[sB;n up(i+1,j) 0.5*miu1;n up(i-1,j) 0.5*miu1+f*velo;n up(i,j+1) 0.5*miu1;n up(i,j-1) 0.5*miu1;n n 1-2*miu1-f*velo];
-       end
+        sA=[sA;n up(i+1,j) -0.5*miu1;n up(i-1,j) -0.5*miu1;n up(i,j+1) -0.5*miu1-0.25*miu1/(j-2);n up(i,j-1) -0.5*miu1+0.25*miu1/(j-2);n n 1+2*miu1];
+        sB=[sB;n up(i+1,j) 0.5*miu1;n up(i-1,j) 0.5*miu1+f*velo;n up(i,j+1) 0.5*miu1+0.25*miu1/(j-2);n up(i,j-1) 0.5*miu1-0.25*miu1/(j-2);n n 1-2*miu1-f*velo];
+        
+        sD=[sD;n up(i-1,j) f*velo;n n 1-f*velo];
+      
     end
-
+end
     j=sinusoid+2;    %interface
     n=up(i,j);
     sA=[sA; n n -miu1-miu2;n up(i,j+1) miu2;n up(i,j-1) miu1];
@@ -113,8 +127,8 @@ for i=2:(length+1)    %inside
     
     for j=(sinusoid+3):(radius+1)  %hepatocytes
         n=up(i,j);
-        sA=[sA;n up(i+1,j) -0.5*miu2;n up(i-1,j) -0.5*miu2;n up(i,j+1) -0.5*miu2;n up(i,j-1) -0.5*miu2;n n 1+2*miu2];
-        sB=[sB;n up(i+1,j) 0.5*miu2;n up(i-1,j) 0.5*miu2;n up(i,j+1) 0.5*miu2;n up(i,j-1) 0.5*miu2;n n 1-2*miu2];
+        sA=[sA;n up(i+1,j) -0.5*miu2;n up(i-1,j) -0.5*miu2;n up(i,j+1) -0.5*miu2-0.25*miu2/(j-2);n up(i,j-1) -0.5*miu2+0.25*miu2/(j-2);n n 1+2*miu2];
+        sB=[sB;n up(i+1,j) 0.5*miu2;n up(i-1,j) 0.5*miu2;n up(i,j+1) 0.5*miu2+0.25*miu2/(j-2);n up(i,j-1) 0.5*miu2-0.25*miu2/(j-2);n n 1-2*miu2];
     end 
     n=up(i,radius+2);       %hepatocytes right boundary, zero flux
     sA=[sA;n n 1;n up(i,radius) -1];
@@ -123,13 +137,15 @@ end
 %sparse matrix defined
 A=sparse(sA(:,1),sA(:,2),sA(:,3),total,total);
 B=sparse(sB(:,1),sB(:,2),sB(:,3),total,total);
-
+D=sparse(sD(:,1),sD(:,2),sD(:,3),total,total);
 
 % ----------------------iterations ----------------------
 C_previous=C; %two-step method for the reaction term
 count=0;
 tic
-while count<iterations
+c_t=1/0;
+while c_t>error_bound
+%while count<iteration
     b_current=b;  
     count
     for i=2:(length+1)    % update the oxygen consumption term
@@ -138,10 +154,19 @@ while count<iterations
             b_current(n)=0.5*timestep*(MM(C_previous(n))-3*MM(C(n)));            
         end
     end
-    result= A\(B*C+b_current); %iterate
+    H=D*H+d;  %iterate hemoglobin
+    result= A\(B*C+b_current); %iterate disolved oxygen
+
+    for i=2:(length+1)    % update the hemoglobin oxygen release
+        for j=2:(sinusoid+1)
+            n=up(i,j);
+            [result(n),H(n)]=rebalance(result(n),H(n));
+        end
+    end
     C_previous=C;   %update
     C=result;
     count=count+1;
+    c_t=max(abs(C-C_previous))/timestep
 end
 toc
 
@@ -149,10 +174,13 @@ toc
 
 %map back to 2-d
 res=matrix_assemble(C);
+hemo=matrix_assemble(H);
 %remove boundry units
 res=res(2:radius+1,2:length+1);
+hemo=hemo(2:radius+1,2:length+1);
 
-save('result.mat','res')
+save('hemo.mat','hemo');
+save('result.mat','res');
 %plot
 %heatmap(res);
 
@@ -160,6 +188,29 @@ save('result.mat','res')
 
 
 %---------------------- helper functions ----------------------
+
+
+function [r_c,r_h]=rebalance(c,h)  %oxygen
+    k1=9200/1.34;
+    k2=26^2.73;
+    k3=c+h;
+    f=@(x) x^3.73+(k1-k3)*x^2.73+k2*x-k2*k3;
+    df=@(x) 3.73*x^2.73+2.73*(k1-k3)*x^1.73+k2;
+    
+    r_c=Newton(f,df,c,1);
+    r_h=c+h-r_c;
+    function [sol] = Newton(f,df,x0,epsilon)
+        sol = x0 - f(x0)/df(x0);
+        
+        
+        %count=0;
+        while abs(f(sol)) > epsilon
+            sol = sol - f(sol)/df(sol);
+         %   count=count+1
+        end
+    end
+end
+
 
 function [res]=up(i,j)  %matrix index to vector index
     global radius;
