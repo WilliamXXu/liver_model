@@ -15,6 +15,7 @@ versions:\
 1.0: original\
 2.1: hemoglobin\
 2.2: 3d design\
+3.0: increase space/time units, reaction function reduced to one-step method
 
 code archive:\
 
