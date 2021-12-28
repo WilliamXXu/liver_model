@@ -11,6 +11,11 @@ helper functions\
 \
 
 note-to-self:\
+versions:\
+1.0: original\
+2.1: hemoglobin\
+2.2: 3d design\
+
 code archive:\
 
 experiment1: one-step method for reaction function (no improvement)\
