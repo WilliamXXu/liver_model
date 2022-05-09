@@ -1,0 +1,511 @@
+\documentclass[12pt]{article}
+
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[english]{babel}
+\setcounter{section}{-1}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+% Useful packages
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\linespread{1.5}
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
+\newcommand{\myparagraph}[1]{\paragraph{#1}\mbox{}\\}
+\title{Part III Systems Biology Project Report\\
+\textbf{Modelling Mitochondrial Liver Toxicity With Oxygen and Cell Density Gradients} }
+\author{Xingze Xu, University of Cambridge\\
+Supervisor: Dr Giovanni Di Veroli, AstraZeneca plc.\\
+Deputy supervisor: Dr Aydar Uatay, AstraZeneca plc.\\
+Number of words: }
+\date{}
+\begin{document}
+\maketitle
+\pagebreak
+\section*{Declaration}
+Name: Xingze Xu\\
+College: Homerton\\
+Project title:\\
+\\
+\textit{I understand the University’s definition of plagiarism. I declare that, in accordance with Discipline regulation 6, this dissertation is entirely my own work except where otherwise stated, either in the form of citation of published work, or acknowledgement of the source of any unpublished material.}\\\\
+Signature:  \quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad      \quad \quad      Date:
+\pagebreak
+
+
+\section*{Summary}
+???
+\pagebreak
+\tableofcontents
+\pagebreak
+\section{List of Abbreviations}\begin{center}
+\begin{tabular}{|c | c|} 
+ \hline
+ \textbf{Abbreviations} & \textbf{Full meanings} \\
+ \hline\hline
+ DILI & Drug-Induced Liver Injury  \\ 
+ \hline
+ MPS & Microphysiological system  \\
+ \hline
+ ATP & Adenosine Triphosphate\\
+ \hline
+  OCR & Oxygen Consumption Rate\\
+ \hline
+  ETC & Electron Transport Chain\\
+ \hline
+  MMP & Mitochondrial Membrane Potential\\
+ \hline
+  SysDILI & Systems Model of Drug-Induced Liver Injury\\
+ \hline
+ ROS & Reactive Oxygen Species\\
+ \hline
+ Km & Michaelis Constant\\
+ \hline
+ LDH & lactate Dehydrogenase\\
+ \hline
+ ALT & Alanine Transaminase\\
+ \hline
+\end{tabular}
+\end{center}
+
+
+\pagebreak
+\section{Introduction}
+\subsection{Drug-Induced Liver Injury}
+Liver is the largest internal organ in human body with a rich collection of distinct functions, including production of bile and metabolism of glucose and fat. Its vital role in metabolism of xenobiotics renders it vulnerable to drug-induced injury. There exists a variety of mechanisms for drug-induced liver injury (DILI), the most prominent ones being mitochondrial dysfunction, bile acid-induced apoptosis and oxidative stress by reactive oxygen species (ROS) and reactive nitrogen species \cite{jaeschkeMechanismsHepatotoxicity2002}.\\\\
+It is discovered that DILI tend to be spatially non-uniform across the entire liver. Overdoses of acetaminophen, for example, tend to damage the region surrounding the central vein \cite{anundiZonationAcetaminophenMetabolism1993a}. This can be explained by the fact that liver itself is inhomogeneous: there is zonation within each liver acinus, the most basic functional unit \cite{mancoLiverZonation2021}. It is commonly accepted that each acinus is divided into three zones from portal triad to central vein, periportal (zone 1), intermediate (zone 2) and perivenous (zone 3), as from Figure \ref{fig:0} \cite{kietzmannMetabolicZonationLiver2017a,godoyRecentAdvances2D2013}. Liver zonation is characterised by two interacting aspects: (1) gradients of substances across the zones, including oxygen, nutrients, xenobiotics, morphogens, hormones and enzymes (2) gradients of rates for various metabolic and regulatory pathways across the zone, such as bile acid production mostly happening in zone 3 \cite{kietzmannMetabolicZonationLiver2017a}. 
+Therefore, liver zonation plays a crucial role in the study of DILI.\\\\
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 8cm, height = 4cm]{acinus.png}
+\caption{Structure of liver acinus and distribution of the three zones. Diagram from Godoy et al. \cite{godoyRecentAdvances2D2013}}.
+\label{fig:0}
+\end{figure}DILI has become a major safety concern in drug development. 22 percent of termination of clinical trials and 32 percent of market withdrawal are caused by hepatotoxicity \cite{watkinsDrugSafetySciences2011a}. Even when signs of abnormal chemistries in liver are reported during clinical trials, the regulators might demand extra clinical trials, which can cost millions of dollars.
+\subsection{Previous Work on Modelling DILI}
+Due to the potential costly attrition in later stage, various models for DILI have been developed for pre-clinical screening.
+\subsubsection{\textit{In Vitro} Model}
+Apart from animal models, recent years have seen rapid development of more sophisticated 3D \textit{in vitro} cell culture models, including spheroid, organoid, scaffold, organ-on-a-chip and 3D bioprinting \cite{fangThreeDimensionalCellCultures}.\\\\To investigate hepatotoxicity, spheroid culture system has been a popular option. As opposed to the traditional 2D monolayer cell culture, spheroid culture provides a simple solution to capture spatial gradients of oxygen, drug, nutrients or signalling molecules, because cells in central and peripheral parts of the spheroid have different exposure to the culture medium.\\\\Organ-on-a-chip, or microphysiological system (MPS) is another common but more sophisticated 3D \textit{in-vitro} culture model. It utilizes microfluidic devices with specific design and electronic control to simulate the microenvironment and important physiological features of organs. MPS for liver has been relatively well developed, and it is widely used in the pharmaceutical industry for pre-clinical screening. Figure \ref{fig:2} shows a typical design \cite{peelIntroducingAutomatedHigh2019a}. However, there are drawbacks for Liver MPS. It is complicated and  time consuming, taking up to seven days to setup even before the intake of drug \cite{peelIntroducingAutomatedHigh2019a}.
+Despite efforts to increase the throughput, it remains challenging to detect and interpret the trial results of liver MPS.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 14cm, height = 4cm]{mps.png}
+\caption{Deisgn of a liver MPS. (A) Dimensions of the MPS; (B) two cell types in the MPS: hepatocypte and liver sinusoidal endothelial cell (LSEC). The interface is coated with extracellular matrix (ECM). Culture media are flown across the cell layers. Diagram from Peel et al. \cite{peelIntroducingAutomatedHigh2019a}}.
+\label{fig:2}
+\end{figure}
+
+\subsubsection{\textit{In Silico} Model}
+With the operational complexity of \textit{in vitro} models in mind, researchers have developed \textit{In silico} liver models to simulate \textit{in vitro} liver models. Multiphysics simlution software such as COMSOL has been used to investigate the drug distribution in spheroid culture and guide the design of oxygen suppply of liver MPS \cite{leedaleMultiscaleModellingDrug2020,lee-montielControlOxygenTension2017}.\\\\There are also more complicated \textit{in silico} models aiming to directly model DILI in human. DILIsym\textsuperscript{\textregistered} by Simulations Plus Inc. is a Quantitative Systems Toxicology software for human DILI that consists of a dozen interacting sub-modules, as from Figure \ref{fig:3} \cite{DILIsymDruginducedLiver}. As opposed to the multiphyics simulations based on partial differential equations (PDE), DILIsym\textsuperscript{\textregistered} is partitioned into the three liver zones each with its set of ordinary differential equations (ODE).
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 12cm, height = 6cm]{dilisym.jpeg}
+\caption{Structure of submodels in DILIsym\textsuperscript{\textregistered}. Diagram from DILIsym\textsuperscript{\textregistered} website \cite{DILIsymDruginducedLiver}}.
+\label{fig:3}
+\end{figure}
+
+\subsection{Systems Model of Drug-Induced Liver Injury (SysDILI)}
+Systems Model of Drug-Induced Liver Injury (SysDILI) is the \textit{in Silico} DILI model presented in this thesis. Important features of SysDILI are summarised below.
+\begin{itemize}
+    \item \textbf{Modular}: as from Figure \ref{fig:1}, SysDILI consists of four interacting submodels, in the same spirit as the aforementioned DILIsym\textsuperscript{\textregistered}. Each submodel was developed and tested independently, so they can be freely assembled. It is also handy to add new submodels such as glycolysis without changing the existing ones.
+    \item \textbf{Continuous Spatiotemporal Gradients}: the gradients in each submodel are spatially continuous with no artificial zonation, in the same spirit as the aforementioned multiphysics simulations. Also, the temporal dynamics for each gradient was modelled, not just the equilibrium states.
+     \item \textbf{Continuum of Domains}: no individual hepatocyte or blood cell in SysDILI. Each domain was modelled as continuum.
+    \item \textbf{Mitochondrial Toxicity}: out of the various DILI mechanisms mentioned above, SysDILI currently focuses on mitochondrial toxicity (reasons in Discussion section).
+    \item \textbf{Dry Lab}: no experiments have been conducted so far. SysDILI was constructed entirely from existing data and known results.
+    
+    \item \textbf{Flexible and Customisable}: SysDILI currently models a sinusoid functional unit of human liver, but it can be readily adapted to MPS by changing the shapes of domains and the boundary conditions, because all the model parameters have been estimated and no gradient data was enforced during model construction.
+    \item \textbf{Aim to Be Mechanistic}: the entire process was modelled whenever possible, including the changes in intermediate variables and temporal dynamics. Black box models were only used when mechanistic modelling is challenging.
+    
+\end{itemize}
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 8cm, height = 5cm]{overall.png}
+\caption{Schematic diagram of SysDILI}
+\label{fig:1}
+\end{figure}
+The ultimate goal of SysDILI is to predict DILI given mechanism and dose-response curve of an unknown drug. Meanwhile, instead of merely giving a score of toxicity, SysDILI was designed to preserve as much mechanistic and spatiotemporal information as possible. The extra information can be compared against physiological data for validation and might even reveal extra insights. With the flexibility, SysDILI can be used to guide the design of MPS and interpret the results. 
+
+
+
+
+
+\section{Results}
+\subsection{SysDILI Model}
+As said in Introduction Section, SysDILI consists of four submodels: Oxygen, Mitochondria, Cell Density and Drug.
+\subsubsection{Oxygen Submodel}
+The domain setup of SysDILI is defined in the Oxygen Submodel. In this thesis, a sinusoid functional unit of human liver was modelled. Since liver sinusoid is a special type of capillary, a design similar to Krogh model of oxygen transport in capillary was used, as shown in Figure \ref{fig:oxy} \cite{goldmanTheoreticalModelsMicrovascular2008}. 3D cylindrical coordinate with rotational symmetry about the axial direction was used, and the schematic diagram shows radial and axial directions. There are three domains: sinusoid, hepatocytes and their interface. Oxygen supplied from blood flowing through the left end of sinusoid falls into two categories, plasma oxygen and haemoglobin oxygen, and it gets consumed by hepatocytes after diffusing across the interface. 
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 8cm, height = 6cm]{oxy_sketch.png}
+\caption{Schematic diagram of SysDILI domain setup for human liver sinusoid unit}
+\label{fig:oxy}
+\end{figure}
+\myparagraph{Model Structure}
+\textbf{Plasma Oxygen}: convection-diffusion: \\$\frac{\partial P}{\partial t}=D_1*\nabla^2P-\boldsymbol{v}\cdot \nabla P=D_1*(\frac{\partial^2 P}{\partial r^2}+\frac{\partial^2 P}{\partial z^2}+\frac{1}{r}*\frac{\partial P}{\partial r})-v*\frac{\partial P}{\partial z}$\\
+\\\textbf{Haemoglobin Oxygen}: convection. Oxygen does not diffuse when bound to haemoglobin. \\$\frac{\partial H}{\partial t}=-\boldsymbol{v}\cdot \nabla H=-v*\frac{\partial H}{\partial z}$\\
+\\\textbf{Oxygen in Hepatocytes}: diffusion-reaction. Michaelis-Menten kinetics was used for oxygen consumption \cite{leedaleSilicoguidedOptimisationOxygen2019}. \\$\frac{\partial O_2}{\partial t}=D_2*\nabla^2O_2-R(O_2)=D_2*(\frac{\partial^2 O_2}{\partial r^2}+\frac{\partial^2 O_2}{\partial z^2}+\frac{1}{r}*\frac{\partial O_2}{\partial r})-\frac{O_2*v_{max}}{O_2+k_m}$\\
+\\\textbf{Oxygen at the Interface}: equal flux. Mass is conserved when oxygen moves across the interface \cite{leedaleSilicoguidedOptimisationOxygen2019}.\\$D_1*\frac{\partial P}{\partial r}=D_2*\frac{\partial O_2}{\partial r}$\\\\
+In the PDE equations above, P, H and $O_2$ are oxygen concentrations in hepatocyte, dissolved in plasma and bound to haemoglobin, respectively. $D_1$ and $D_2$ are oxygen diffusion coefficients in plasma and hepatocytes. v is the blood flow velocity in sinusoid. $v_{max}$ and $k_m$ are constants for Michaelis-Menten kinetics of oxygen consumption in hepatocytes.\\\\The PDE system was discretised both in time ($\Delta t=4.5*10^{-3}sec$) and space ($\Delta x=2 \mu m$) before being simulated numerically. Details of the numerical algorithm, the boundary conditions and the choice of constants are elaborated in Methods section.
+\myparagraph{Haemoglobin Oxygen Release}
+Oxygen bound to haemoglobin is released when the plasma oxygen concentration decreases due to diffusion, moving down the haemoglobin-oxygen dissociation curve. The rate constant of oxyhemoglobin dissociation suggests that the process is much faster than oxygen diffusion in plasma \cite{olsonMeasurementRateConstants2003}. Therefore, in the discretised numerical algorithm it was assumed that haemoglobin releases oxygen and the equilibrium is instantaneously reached at the end of each time step. This process is termed rebalancing, as shown in Figure \ref{fig:hemo}, where $P_n$ and $\Bar{P}_n$ stand for plasma oxygen concentrations at n-th time step before and after rebalancing, respectively. $H_n$ and $\Bar{H}_n$ have the same meanings except for the concentration of oxygen bound to haemoglobin.
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 10cm, height = 4.5cm]{hemo_sketch.png}
+\caption{Schematic diagram of oxygen rebalancing in sinusoid}
+\label{fig:hemo}
+\end{figure}
+\begin{equation}
+\begin{aligned}
+& \Bar{P}_n+\Bar{H}_n=P^n+H^n \\
+& \Bar{H}_n=H_{max}*\frac{{\Bar{P}_n}^{h}}{{\Bar{P}_n}^{h}+{K_A}^{h}}\\
+\end{aligned}
+\label{eqn:reba}
+\end{equation}
+Equation \ref{eqn:reba} shows the exact procedure of rebalancing, during which $\Bar{H}_n$ and $\Bar{P}_n$ are solved from known $H_n$ and $P_n$. Haemoglobin-oxygen dissociation curve is described by Hill equation, with the Hill coefficient h=2.73 and $K_A=26$ mmHg, concentration of plasma oxygen with half of haemoglobin saturated \cite{valabregueRelationCerebralBlood2003}. $H_{max}=6865.67$ mmHg is the total concentration of haemoglobin oxygen when haemoglobin is 100\% saturated.
+\myparagraph{Validation}
+\begin{figure}[ht] 
+  
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{haemo.png} 
+  \end{minipage}%%
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{plasma.png} 
+  \end{minipage} 
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{hepa.png} 
+  \end{minipage}%% 
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{ocr.png} 
+  \end{minipage} 
+  \caption{Output of Oxygen Submodel. Clockwise from top-left: Haemoglobin Oxygen Concentration, Plasma Oxygen Concentration, Hepatocyte Oxygen Consumption Rate, Hepatocyte Oxygen Concentration. Units are mmHg or mmHg/second.}
+  \label{fig:quad} 
+\end{figure}
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 8cm, height = 7cm]{oxy_vali.png}
+\caption{Simulated Plasma Oxygen Concentration At the Centre of Sinusoid}
+\label{fig:oxy_vali}
+\end{figure}
+\\\\Figure \ref{fig:quad} shows output of different domains from Oxygen Submodel. Gradients of oxygen concentration and oxygen consumption rate (OCR) were effectively recreated.\\\\
+In human hepatic sinusoid, the plasma oxygen concentration is approximately 65 mmHg in zone 1 and 35 mmHg in zone 3 \cite{jungermannOxygenModulatorMetabolic2000}. By fixing the boundary condition of plasma oxygen concentration at entry of zone 1 to be 65 mmHg, the simulated outcome at exit of zone 3 is close to 35 mmHg, as from Figure \ref{fig:oxy_vali}.
+\myparagraph{Sensitivity Analysis}
+
+\subsubsection{Mitochondria Submodel}
+The submodel was adapted and simplified from MITOsym\textsuperscript{\textregistered} introduced in Yang et al., a mechanistic hepatocyte model of bioenergetics  \cite{y.yangMITOsymMechanisticMathematical2015}. Three different toxicity mechanisms are supported: electron transport chain (ETC) inhibitor, uncoupler and ATPase inhibitor.
+\myparagraph{Model Structure}
+\begin{equation}
+\label{eq:1}
+\begin{aligned}
+&\frac{pyr2ox}{pyr2ox_{basal}}=\frac{k_1^{k_2}+\phi_{basal}^{k_2}}{k_1^{k_2}+\phi^{k_2}}*\frac{k_3^{k_4}+OX_{basal}^{k_4}}{k_3^{k_4}+OX^{k_4}}\\
+&\frac{dOX}{dt}=-ETCF+pyr2ox\\
+& ETCF=q_1*\frac{O_2*v_1}{O_2+v_2}*\frac{OX}{OX_{basal}}*drug_{etc}\\
+& OCR=q_2*ETCF\\
+&\frac{d\phi}{dt}=q_3*ETCF-q_4*ATPF-drug_{uncoupler} \\
+&ATPF=\frac{\phi*k_5}{\phi+k_6}*\frac{2*ATPC_{basal}}{ATPC_{basal}+ATPC}*drug_{ATPase}\\
+&\frac{dATPC}{dt}=q_5*ATPF-q_6*ATPC 
+\end{aligned} \end{equation}
+\begin{equation}
+\label{eq:2}
+\begin{aligned}
+& drug_{etc}=\frac{{km}_1}{{km}_1+C}\\
+& drug_{uncoupler}=\phi*\frac{k_7*C}{{km}_2+C}\\& drug_{ATPase}=\frac{{km}_3}{{km}_3+C}\end{aligned} \end{equation}
+\begin{table}
+\begin{tabular}{|c | c|} 
+ \hline
+ \textbf{Variables} & \textbf{Meanings} \\
+ \hline\hline
+ pyr2ox & Rate of pyruvate as oxidative substrate in mitochondria \\ 
+ \hline
+   OX & Mitochondrial oxidative substrate\\
+ \hline
+  ETCF & Rate of oxidative substrate used for ETC activity, target of \textbf{ETC inhibitor}\\
+ \hline
+ OCR & Oxygen Consumption Rate\\
+ \hline
+ $O_2$ & Oxygen concentration \\
+  \hline
+
+ $\phi$ & Mitochondrial Membrane Potential, target of \textbf{Uncoupler}\\
+ \hline
+ ATPF & Rate of mitochondria ATP production, target of \textbf{ATPase inhibitor}\\
+ \hline
+ ATPC & Cellular ATP\\
+ \hline
+\end{tabular}
+\caption{Meanings of variables in Equation \ref{eq:1}}
+\label{Tab:1}
+\end{table}\\\\Equation \ref{eq:1} defines the structure of the submodel, with the meanings of all variables listed in Table \ref{Tab:1}. Equation \ref{eq:2} defines the effect of drug with each toxicity mechanism, where C is the concentration of each drug respectively.
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 10cm, height = 9cm]{mito_schematic.png}
+\caption{Schematic diagram of Mitochondria Submodel }
+\label{fig:6}
+\end{figure}\\\\Figure \ref{fig:6} provides an schematic view of Equation \ref{eq:1}. Figure \ref{fig:5} shows how the submodel relates to its predecessor, MITOsym\textsuperscript{\textregistered}. The encircled variables and feedback signals remained in SysDILI. Three additional changes from MITOsym\textsuperscript{\textregistered} are summarised below.
+\begin{itemize}
+\item Influx to pyr2ox, the first variable of the submodel, is constant.
+\item ETCF is affected by oxygen concentration, and their relation is described by Michaelis–Menten kinetics. This enables the interaction between Oxygen and Mitochondria Submodels.
+\item To calculate ATPC, ATPF is multiplied by a factor of $q_5=\frac{4}{3}$ to compensate for glycolytic ATP that is not modelled (reasons and consequences in Discussion section) . 
+\end{itemize}
+
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 14cm, height = 9cm]{yang_model_modified.png}
+\caption{Schematic diagram of MITOsym\textsuperscript{\textregistered}. The encircled part remained in SysDILI. Diagram adapted from Yang et al.\cite{y.yangMITOsymMechanisticMathematical2015} }
+\label{fig:5}
+\end{figure}
+
+
+
+\myparagraph{Model Parametrisation}
+Figure \ref{fig:4_1} shows how the model parameters were determined during model construction. Basal values of all variables were given in Yang et al. \{$q_i$\} and \{$k_i$\} were estimated, because most of the parameter values were not provided by the authors. \{$q_i$\} were determined in such a way that the basal values of variables were ensured to be an stationary point of the ODE system. Besides $q_5$ mentioned above, $q_4$ for $\frac{d\phi}{dt}$ was calculated using physiological data (see the Methods Section). \{$k_i$\} were fitted using the batch of drug response data provided in Yang et al., nine data sets consisting of Rotenone (ETC inhibitor), FCCP (Uncoupler) and Oligomycin (ATPase inhibitor) intakes versus OCR, $\phi$, and ATPC.\\\\\begin{figure}[ht] 
+  
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{etc_mmp.png} 
+  \end{minipage}%%
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{etc_ocr.png} 
+  \end{minipage} 
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{uncp_atp.png} 
+  \end{minipage}%% 
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{atpase_ocr.png} 
+  \end{minipage} 
+  \caption{Goodness-of-fit for Mitochondria Submodel in different datasets. Clockwise from top-left: Rotenone versus MMP, Rotenone versus OCR, Oligomycin versus OCR, FCCP versus cellular ATP.}
+  \label{fig:quad_mito} 
+\end{figure}Figure \ref{fig:quad_mito} shows the goodness-of-it of Mitochondria model. Four out of nine datasets are present. The values of parameters are listed in Method Section.
+\myparagraph{Model Operation}
+Figure \ref{fig:4_2} shows how the model handles unknown drugs. All parameters determined during model construction stay constant. The mechanism and the dose-response curve of the unknown drug are needed as input, then the corresponding drug-specific $km_i$ is fitted from dose-response curve, after which the simulation of this particular drug can be carried out. Alternatively, Michaelis constant (Km) can be supplied to reconstruct the dose-response curve of the unknown drug. \\\\
+This procedure is different from that in Yang et al., where values of experimental Km were used directly for $km_i$ in the model \cite{y.yangMITOsymMechanisticMathematical2015}. In contrast, the submodel treats $km_i$ as nominal Km determined from experimental Km by optimisation, because the other variables might also changes with drug dose.
+
+(nominal Km vs. effective)
+
+
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 9cm, height = 4.5cm]{mito_step1.png}
+\caption{Step One: determination of Mitochondria Submodel parameters}
+\label{fig:4_1}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 9.5cm, height = 4.5cm]{mito_step2.png}
+\caption{Step Two: the operation of Mitochondria Submodel with an unknown drug}
+\label{fig:4_2}
+\end{figure}
+
+
+
+\subsubsection{Cell Density Submodel}
+\begin{equation}\frac{d DEN}{dt}= -(k_8*\frac{{AD}^{k_{10}}}{{ AD}^{k_{10}}+{k_{9}}^{k_{10}}}+k_{11}*\frac{{AD}^{k_{13}}}{{ AD}^{k_{13}}+{k_{12}}^{k_{13}}})*DEN 
+\label{eq:3}
+\end{equation}
+Equation \ref{eq:3} defines Cell Density Submodel, where DEN is the density of hepatocytes and AD is the percentage decrease of cellular ATP. Note that AD=0 when cellular ATP is above the basal level.\\\\ 
+This submodel was constructed from scratch. ATP depletion is the only input variable because it is regarded as an important cause of hepatocyte death \cite{redegeldDepletionATPNot1992}. Also, ATP depletion is relatively easy to track and linked directly to mitochondrial toxicity modelled in Mitochondria Submodel. Two Hill equations were used, motivated by the finding that apoptosis and necrosis are both energy-dependent with ATP level as a switch between them \cite{leistIntracellularAdenosineTriphosphate1997a,tsujimotoApoptosisNecrosisIntracellular1997}.\\\\
+Only acute DILI (within 12 hours) was modelled in this submodel, because it is relatively easy to model and validate with existing data. Hepatocyte regeneration is negligible within this time range, so it is not modelled and the modelled cell density is monotonically decreasing in time \cite{furchtgottModelLiverRegeneration2009}. Modelling longer term DILI might require a considerably more complex system.
+\myparagraph{Model Parametrisation}
+The parameters {$k_i$} were fitted using multiple data sets of ATP versus time (input) and cell viability versus time (output) from Redegeld et al. \cite{redegeldDepletionATPNot1992,redegeldInteractionCellularATP1990}. The experiments were \textit{in vitro} using rat hepatocytes, with lactate dehydrogenase (LDH) leakage as indicator for cell death, and only data from experiments with inhibition glycolytic ATP was selected (reasons in Discussion section).\\\\Figure \ref{fig:quad_den} shows good fitting results, confirming the choice of two Hill equations.\begin{figure}[ht] 
+  
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{den_vali1.png} 
+  \end{minipage}%%
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{den_vali2.png} 
+  \end{minipage} 
+  \caption{Goodness-of-fit for Mitochondria Submodel in different datasets.}
+  \label{fig:quad_den}
+\end{figure}
+
+
+\subsubsection{Drug Submodel}
+Three options have been developed for Drug Submodel.
+\begin{itemize}
+    \item \textbf{Option 1: Continuous Spatiotemporal Drug Gradient}: this setup is the same as Oxygen Submodel except an extra permeability coefficient when drug crosses cell membrane, modelled by changing the PDE at the sinusoid-hepatocyte interface to the following \cite{leedaleMultiscaleModellingDrug2020}.
+    \begin{equation}
+        D_s*\frac{\partial C_s}{\partial r}=D_h*\frac{\partial C_h}{\partial r}=Q(C_s-C_h)
+        \label{eq:drug}
+    \end{equation}
+    In Equation \ref{eq:drug}, Q is the drug-specific permeability coefficient. $D_s$ and $D_h$ are diffusion coefficients of drug in sinusoid and hepatocytes, respectively. $C_s$ and $C_h$ are the drug concentration in sinusoid and hepatocytes, respectively. In the numerical algorithm, this difference was modelled by increasing the interface from one unit to two to accommodate the extra condition $Q(C_s-C_h)$.\\\\Figure \ref{fig:quad_drug} shows the output of drugs with high and low permeability. High permeability results in radial gradient of drug concentration, while concentration discontinuity can be seen across the interface for drug with low permeability, as one would expected.
+    \begin{figure}
+ \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{drug_high.png} 
+  \end{minipage}%%
+  \begin{minipage}[b]{0.5\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{drug_low.png} 
+  \end{minipage} 
+  \caption{Output of Drug Submodel Option 1. Q=4.8948 and Q= 0.0081 for drugs with high and low permeability, respectively \cite{leedaleMultiscaleModellingDrug2020}}
+  \label{fig:quad_drug}
+\end{figure}
+    \item \textbf{Option 2: Two-Compartment Model}: no drug gradient, only two compartments: sinusoid (central) and hepatocytes (peripheral). In Equation \ref{eq:two_comp}, $k_{sh}$, $k_{hs}$, $k_e$ and $k_metabolism$ stand for first-order rate constants for drug distribution, redistribution, elimination and metabolism, respectively. I is the rate of drug input which may vary with time.\\ 
+    \begin{equation}
+    \begin{aligned}
+        &\frac{d C_s}{dt}=-(k_{e}+k_{sh})*C_s+k_{hs}*C_h+I \\
+        &\frac{d C_h}{dt}=-(k_{m}+k_{hs})*C_h+k_{sh}*C_s \\
+        \end{aligned}
+        \label{eq:two_comp}
+    \end{equation}
+    \item \textbf{Option 3: One-Compartment Model}: hepatocytes domain is the only compartment. Drug concentration increases linear to reach $C_{max}$ after time $t_{max}$, and then drops exponentially with a fixed half life. (plot)
+\end{itemize}
+Option 1 is more compatible with the theme of SysDILI, but it is difficult to validate in the context of human liver. Option 2 and 3 are pharmacokinetics model, so they might be more reliable and easier to parametrise with existing data. Option 3 was selected for the subsequent simulations, because human pharmacokinetics data of $C_{max}$, $T_{max}$ and half life of drugs are readily available, which makes option 3 easier to manipulate and track, allowing fair comparisons of different drugs. Option 1 and 2 might be used later in \textit{in vitro} scenarios where measurement and manipulation are easier.
+
+\subsection{Toxicity Simulations}
+As said in Introduction section, submodels can be freely assembled for simulation. A few different combinations with increasing complexity have been tried. The mechanism of ETC inhibition was selected for simulations. Drugs and doses used in simulations are summarised in Table \ref{tab:drug}. Drug Submodel option 3 was used with $T_{max}=2$ hours and half life of 4.5 hours.
+\begin{table}
+\centering
+\begin{tabular}{|c|c| c| c| c |} 
+ \hline
+ \textbf{Trial IDs} & \textbf{Drug Names} & \textbf{$k_m$} & \textbf{Dose ($C_{max}$)} & \textbf{Known Toxicity}\\
+ \hline\hline
+A &Aripiprazole & 0.75 & 0.1 & 0 \\
+\hline
+B &Aripiprazole & 0.75 & 0.2 & 0 \\
+\hline
+C &Known Drug & 2.7 & 1.3 & 0.5 \\
+\hline
+D &Known Drug & 2.7 & 5 &  1\\
+\hline
+E &Control & 0.35 & 1.3 & 1 \\
+\hline
+F& Control & 0.35 & 5 &  1\\
+\hline
+
+\end{tabular}
+\caption{Drugs and doses in the simulations. Toxicity value of 0 means safe, 1 means toxic and 0.5 means slightly toxic.}
+\label{tab:drug}
+\end{table}
+\subsubsection{Drug+Mitochondria (DM)}
+When Cell Density Submodel is not involved, cellular ATP level is used as surrogate. Cellular ATP lower than 50 percent of basal level implies toxicity, because it marks the onset of immune mediated induced necrosis by TNF-$\alpha$ \cite{leistIntracellularAdenosineTriphosphate1997a,nieminenATPDepletionRather1994a,cannonEffectsFructoseAdenosine1991}. No spatial graident is involved in DM model, so oxygen concentration was fixed to the basal level in Mitochondria Submodel.\\\\
+Figure \ref{fig:dm} shows the outcome. Trial D, E and F were correctly predicted to be toxic, while Trial A and B were correctly predicted to be safe with almost no change to cellular ATP levels. However, Trial C was predicted to be safe, which is questionable. Further simulation and investigation are necessary.
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 10cm, height =8cm]{dm.png}
+\caption{Toxicity simulation outcomes of DM model}
+\label{fig:dm}
+\end{figure}
+
+\subsubsection{Drug+Mitochondria+Oxygen (DMO)}
+Spatial gradients appeared after adding Oxygen Submodel. When assembling submodels, the spatially discredited domain setup of Oxygen Submodel was used, while each discredited point received an independent copy of ODE-based Mitochondria Submodel and Drug Submodel.
+Figure \ref{fig:dmo} shows the outcome of DMO model. Adding the oxygen gradient has rendered more realistic results for Trial C.
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 12cm, height =10cm]{dmo.png}
+\caption{Toxicity simulation outcomes of DMO model. Cellular ATP level is the average of the entire hepatocytes domain.}
+\label{fig:dmo}
+\end{figure}
+
+
+\subsubsection{Drug+Mitochondria+Oxygen+Density (DMOD)}
+After adding Cell Density Submodel, cellular ATP is no longer needed as surrogate. Cell density below 25 percent of basal value is considered fatal damage \cite{furchtgottModelLiverRegeneration2009}.
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 12cm, height =10cm]{dmod.png}
+\caption{Toxicity simulation outcomes of DMOD model. Cellular ATP level is the average of the entire hepatocytes domain.}
+\label{fig:dmod}
+\end{figure}
+\begin{figure}[h!]
+\centering
+\includegraphics[width = 10cm, height =8cm]{loss.png}
+\caption{Hepatocyte Oxygen Concentration of Trial F in DMOD model after 450 minutes. Oxygen gradient is mostly lost.}
+\label{fig:loss}
+\end{figure}
+Figure \ref{fig:dmod} shows the outcome of DMOD model. Trial D, E and F are confirmed to be fatally toxic, while Trial C is close to the borderline as expected. \\\\
+The plots above are all averages of simulations. Simulated spatial gradients also contain useful insights. Research suggests that metabolic zonation of liver is often lost in liver diseases \cite{kietzmannMetabolicZonationLiver2017a}. Figure \ref{fig:loss} confirms this. When compared to Figure \ref{fig:quad}, simulated outcome of Trial F by DMOD model indicates that severe DILI damages the oxygen gradient.
+
+(show spatial density plot. PV region more vulnerable) %The simulations confirm the importance of spatial distribution
+%50 percent ATP is the switch! test density model compare to one single Hill equation
+
+\section{Discussion}
+Despite each submodel being constructed independently, SysDILI goes beyond the reductionist approach. Holistic approach of systems biology was used to study biological interactions quantitatively, and lots of efforts were made to ensure that the submodels work smoothly together  \cite{tavassolySystemsBiologyPrimer2018}.\\\\
+Some of the methods and models in SysDILI built upon previous research, but there are also three notable original ideas.
+\begin{itemize}
+    \item Oxygen transport by haemoglobin was modelled dynamically, with the rebalancing process at the end of time step.
+    \item {$km_i$} for the drugs in Mitochondrial Submodel were treated as nominal values and determined by optimisation, to handle the complexity of model.
+    \item Two Hill equations were used in Cell Density Submodel to capture the combined effects of energy-dependent apoptosis and necrosis, instead of a separate model for each process. This "guided" black box model balances effectiveness and simplicity.
+\end{itemize}
+\subsection{Model Design}
+SysDILI currently focuses on mitochondrial toxicity for two reasons. Firstly, mitochondria activities are relatively easy to measure and bioenergetics is well characterised. Secondly, mitochondria interacts well with other submodels. As from Figure \ref{fig:1}, it is directly associated with respiration and oxygen gradient, as well as cell death by ATP depletion.\\\\
+Instead of designating artificial zones or gradients, SysDILI was engineered to create the gradients by constructions to investigate the root cause. Liver zonation is an observed result of various gradients that regulate it. There is evidence that liver zonation is rather dynamic and not static, changing with the gradients \cite{kietzmannMetabolicZonationLiver2017a}. Meanwhile, artificial gradients such as oxygen gradient was used to investigate its effects \cite{kangMetabolicPatterningChip2018}. Acknowledging their effects, it is possible to go even deeper and uncover the cause of substance gradients, such as production, consumption and transport.\\\\
+In Mitochondria Submodel, mitochondrial ATP was multiply by $\frac{4}{3}$ to account for glycolytic ATP. This tend to underestimate the cellular ATP level when mitochondria activity gets inhibited, because glycolytic ATP is independent and might not decrease with mitochondrial ATP. Alternatively, glycolytic ATP can be fixed to the basal value, but then there will be almost no cell death in the time span of acute DILI modelled by SysDILI. The current treatment of glycolytic ATP might underestimate drug safety, which is more tolerable than overestimation. Also, short term acute cell death in SysDILI might correspond to significant DILI in longer term.\\\\
+More importantly, hepatocyte viability is more sensitive to depletion of glycolytic ATP than mitochondrial ATP \cite{redegeldDepletionATPNot1992}. Redegeld et al. suggests that this might be due to the sub-cellular distribution of ATP: glycolytic ATP in the vicinity of cell membrane is more available to the ATP-driven processes at the membrane, which is the limiting factor in cell death \cite{jonesIntracellularDiffusionGradients1986}. For example, the calcium pump of cell membrane in pancreatic cancer cell can be sustained by glycolytic ATP, and the cell survives without mitochondrial ATP \cite{jamesGlycolyticATPFuels2013}. Therefore, to paratmetrise Cell Density Model, only experiments with glycolysis inhibition were used. Again, this underestimate drug safety instead of overestimating it. 
+%\subsection{Findings}
+\subsection{Limitations and Potential Improvements}
+With limited time for this project, the focus was on model construction and validation. More work will be done to explore SysDILI and use it to gain insight into drug-liver interactions.\\\\Because this is a dry lab project, SysDILI relies on existing experimental data, which tend not to be ideal. The datasets used to parameterise each submodel are inconsistent. Parameters of HepaRG normal human hepatocyte were used in Oxygen Submodel, while all data used in Mitochondria Submodel is from HepG2 human liver cancer cell with lower metabolic activities than normal hepatocytes \cite{vinkenProtocolsVitroHepatocyte2015}. Cell Density Submodel were fitted with rat hepatocyte in \textit{in-vitro} setting. Therefore, despite each submodel being quantitative, at this stage SysDILI should be regarded as qualitative instead of quantitative model. The assumption is that the data inconsistency does not change the qualitative outcome.\\\\
+Mitochondria Submodel can be upgraded to Bioenergetics Submodel by implementing and improving the entire MITOsym\textsuperscript{\textregistered}. Variables of glycolytic ATP, lactate, glucose and glycogen will be available, after which toxicity mechanisms affecting glycolysis and glycogenolysis can be studied. Glycolytic ATP and mitochondrial ATP can be treated separately to eliminate the bias in Cell Density Submodel, the underestimation of drug safety mentioned above. Data from galactose-grown hepatocytes might be useful to isolate the effect of mitochondrial ATP, because galactose glycolysis yields no net ATP \cite{dykensMitochondrialToxicity2014a,shiratoriGlycolyticSuppressionDramatically2019}.\\\\
+Also, the Mitochondria Submodel might be used to infer the toxicity mechanism of an unknown drug. Given drug-response data of different variables, all {$km_i$} can be determined together through optimisation. The smaller $km_i$ may indicate a bigger effect through that particular mechanism.\\\\
+As mentioned before, Cell Density Submodel only models short term DILI within 12 hours for simplicity. It might be extended to model longer term DILI, with a more complex and mechanistic ODE system modelling mechanisms and regulatory pathways for regeneration, apoptosis and necrosis \cite{furchtgottModelLiverRegeneration2009,remienMathematicalModelingLiver2012}. Data from \textit{in-vitro} experiment of rat hepatocyte LDH might be replaced by \textit{in-vivo} measurement of Alanine transaminase (ALT), a commonly used indicator specific to human DILI \cite{gianniniLiverEnzymeAlteration2005,watkinsDrugSafetySciences2011a}.\\\\The domain setup to model human liver can be improved by adding space of Disse. More molecules that are significant in liver zonation such as glucose and growth factors can be added, using models similar to Oxygen or Drug Submodel \cite{kietzmannMetabolicZonationLiver2017a}. Domains and submodels can be easily changed or added to adapt to the setting of a particular MPS. Resources can be saved by narrowing down the range of drug dose for MPS experiments, using the toxicity predictions from SysDILI.\\\\
+In terms of implementation, MATLAB codes might be made more organised using MATLAB SimBiology toolbox, which takes care of variables and their units and streamlines model analysis. If large scale simulation is needed, the core program of SysDILI can be translated into Python.
+\section{Methods}
+All simulations, optimisations and visualisation were performed in MATLAB. The ODE systems for mitochondria, cell density and drug were solved numerically using ODE15s solver. The PDE systems (convection–diffusion-reaction equation) for oxygen and drug were solved by a numerical solver developed from scratch, using Crank-Nicolson method for diffusion, the upwind scheme for convection and Euler method for reaction. Parameters fitting for mitochondria and cell density were performed using multi-start global optimisation algorithm with interior-point method as the local optimiser available in MATLAB. For the rebalancing of haemoglobin and plasma oxygen, Equation \ref{eqn:reba} was solved by a Newton–Raphson method root finder developed from scratch to speed up simulations.
+\begin{table}
+\centering
+\begin{tabular}{|c | c| c|} 
+ \hline
+ \textbf{Parameters} & \textbf{Values} & \textbf{Sources}\\
+ \hline\hline
+ Sinusoid Length & 275 $\mu$m & Ehrlich et al. \cite{ehrlichChallengesOpportunitiesDesign2019}\\ 
+ \hline
+Sinusoid Diameter & 10-15 $\mu$m (12.5 $\mu$m) & Maynard et al. \cite{maynardChapter14Liver2019}\\
+\hline
+Hepatocyte Diameter & 25-30 $\mu$m (27.5 $\mu$m) & Meyer et al. \cite{meyerChapterLiver2016}\\
+\hline
+Sinusoid Blood Flow Velocity & 300-650 $\mu$m/s (400 $\mu$m/) & Muller et al.\cite{mullerEstimatingBloodFlow2009}\\
+$v_max$ of hepatocyte OCR & 44 $\mu$M/s & Leedale et al. \cite{leedaleMultiscaleModellingDrug2020}\\
+\hline
+$k_m$ of hepatocyte OCR & 6.24 $\mu$M & Leedale et al. \cite{leedaleMultiscaleModellingDrug2020}\\
+\hline
+
+\end{tabular}
+\caption{Human Physiological Parameters for Oxygen Submodel}
+\label{Tab:2}
+\end{table}
+\\\\Table \ref{Tab:2} lists parameters in Oxygen Submodel from human physiological data. time ($\Delta t=4.5*10^{-3}sec$) and space ($\Delta x=2 \mu m$) steps were chosen to satisfy the stability conditions of Crank-Nicolson method and the upwind scheme.
+Throughout Oxygen Submodel partial pressure with unit mmHg were used in place of concentration, because they are directly proportion by Henry's law
+with solubility coefficient of oxygen in plasma $\alpha=3\times10^{-5}$ml $O_2$/ml plasma/mmHg \cite{pittmanOxygenTransport2011}.\\\\
+For the boundary conditions of Oxygen Submodel (Figure \ref{fig:oxy}), zero flux Neumann boundary condition was chosen for the boundary of hepatocytes domain. At the sinusoid entrance, plasma oxygen was given Dirichlet boundary condition as mentioned above while plasma and haemoglobin oxygen are in equilibrium. At the sinusiod exit, both plasma and haemoglobin oxygen have convection only, the diffusion of plasma oxygen at the exit is negligible.\\\\
+\begin{equation}
+\begin{aligned}
+\Delta \phi&=\frac{RT}{nF}*ln(\frac{[H^+]_{out}}{[H^+]_{in}})\\
+\frac{d \Delta \phi}{dt}&=\frac{RT}{nF}*(\frac{1}{[H^+]_{out}}*\frac{d [H^+]_{out}}{dt}-\frac{1}{[H^+]_{in}}*\frac{d [H^+]_{in}}{dt})\\
+&=\frac{RT}{nF}*(\frac{1}{[H^+]_{out}}+\frac{1}{[H^+]_{in}})*\frac{d ATP}{dt}*k_{[H+]/ATP}\\
+&=\frac{RT}{nF}*(\frac{1}{10^{pH_{out}}}+\frac{1}{10^{pH_{in}}})*\frac{d ATP}{dt}*k_{[H+]/ATP}\\
+\frac{d \Delta \phi}{d ATP}&=\frac{RT}{nF}*(\frac{1}{10^{pH_{out}}}+\frac{1}{10^{pH_{in}}})*k_{[H+]/ATP}\\
+    \end{aligned}
+    \label{eq:mmp}
+\end{equation}
+(table for all mito and density parameters)
+\\\\In Mitochondria Submodel,  the constant $q_4$ represents the change to MMP potential per mM of ATP produced. Nernst potential was differentiated to calculate this constant, as from Equation \ref{eq:mmp} \cite{zorovaMitochondrialMembranePotential2018}. $k_{[H+]/ATP}=3$, because 3 protons are moved out to produce 1 ATP \cite{brandATPRatioATP1977}. pH values of the mitochondrial matrix and the inter-membrane space are $pH_{in}=7.78$ and $pH_{out}=6.88$, respectively \cite{porcelliPHDifferenceOuter2005}.
+\pagebreak
+\section*{Acknowledgements}
+Firstly, I wish to thank my supervisor Dr Di Veroli, who gave me the chance to participate in this project and work with the colleagues from the world-class pharmaceutical company AstraZenca. I really appreciate the concise and spot-on feedbacks that he gave me. He challenged me to question every assumption that I made. He also set high standards for my presentation, which I am now aware is very important in biological science. I will keep the meticulous attitude towards science and always pursue excellence in my future research.\\\\
+I also wish to thank Dr Uatay, my day-to-day supervisor. Without all the basic material that he provided, it would have been impossible for me to start this project. When I faced the "crossroads", he was always ready to give me guidance. Despite my inexperience in modelling and scientific research in general, he was patient enough to explain the basic knowledge and principles to me. With his expertise in both quantitative methods and liver physiology, he is really a good inspiration for my personal development.\\\\
+I am also grateful to all the course organisers and administrators of Part III Systems Biology. They have made it possible for me, a mathematics student who did not even study A-Level Biology, to kick start my research in biological science. More importantly, with all the affirmative experience and support from this course, now I am confident and passionate to embark on this wonderful journey in scientific research.
+\pagebreak
+
+
+
+\bibliographystyle{plain}
+\bibliography{thesis}
+
+\end{document}
